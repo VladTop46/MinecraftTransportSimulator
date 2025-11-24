@@ -493,6 +493,18 @@ public class EntityVehicleF_Physics extends AEntityVehicleE_Powered {
             totalTorque.x /= momentPitch;
             totalTorque.y /= momentYaw;
             totalTorque.z /= momentRoll;
+            
+            // FIX: Добавляем аэродинамическое демпфирование для стабилизации на высоких скоростях
+            // Демпфирование растёт с квадратом скорости, что физически корректно
+            // velocity в м/тик, коэффициент подобран эмпирически для начала эффекта с ~100 м/с
+            double velocitySquared = velocity * velocity;
+            double dampingFactor = 1.0 / (1.0 + velocitySquared * 0.00005);
+            
+            // Применяем демпфирование только к pitch и yaw, т.к. только они проблемные
+            // Roll обычно имеет меньший момент инерции и не требует такой же коррекции
+            totalTorque.x *= dampingFactor;
+            totalTorque.y *= dampingFactor;
+            
             rotation.angles.set(totalTorque).add(rotorRotation);
         } else if (!lockedOnRoad) {
             towedByConnection.hookupPriorPosition.set(towedByConnection.hookupCurrentPosition);
